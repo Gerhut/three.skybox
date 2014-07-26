@@ -1,67 +1,34 @@
-var container, stats;
-
 var camera, scene, renderer;
-var cameraCube, sceneCube;
 
-var mesh, geometry;
+var currentX = null;
+var currentY = null;
 
-var loader;
-
-var pointLight;
-
-var mouseX = 0;
-var mouseY = 0;
+var theta = 0;
+var phi = 0;
 
 var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
 
+document.addEventListener('mousedown', onDocumentMouseDown, false);
 document.addEventListener('mousemove', onDocumentMouseMove, false);
+document.addEventListener('mouseup', onDocumentMouseUp, false);
 
 init();
-animate();
 
 function init() {
 
-  container = document.createElement( 'div' );
-  document.body.appendChild( container );
-
-  camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 5000 );
-  camera.position.z = 2000;
-
-  cameraCube = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 100 );
+  camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 100 );
 
   scene = new THREE.Scene();
-  sceneCube = new THREE.Scene();
-
-  // LIGHTS
-
-  var ambient = new THREE.AmbientLight( 0xffffff );
-  scene.add( ambient );
-
-  pointLight = new THREE.PointLight( 0xffffff, 2 );
-  scene.add( pointLight );
-
-  // light representation
-
-  var sphere = new THREE.SphereGeometry( 100, 16, 8 );
-
-  var mesh = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xffaa00 } ) );
-  mesh.scale.set( 0.05, 0.05, 0.05 );
-  pointLight.add( mesh );
 
   var urls = [
-      'you.jpg', 'zuo.jpg',
-      'shang.jpg', 'xia.jpg',
-      'qian.jpg', 'hou.jpg'
-    ];
+    'you.jpg', 'zuo.jpg',
+    'shang.jpg', 'xia.jpg',
+    'qian.jpg', 'hou.jpg'
+  ];
 
   var reflectionCube = THREE.ImageUtils.loadTextureCube( urls );
   reflectionCube.format = THREE.RGBFormat;
-
-  var refractionCube = new THREE.CubeTexture( reflectionCube.image, new THREE.CubeRefractionMapping() );
-  refractionCube.format = THREE.RGBFormat;
-  
-  // Skybox
 
   var shader = THREE.ShaderLib[ "cube" ];
   shader.uniforms[ "tCube" ].value = reflectionCube;
@@ -74,21 +41,19 @@ function init() {
     depthWrite: false,
     side: THREE.BackSide
 
-  } ),
+  } );
 
-  mesh = new THREE.Mesh( new THREE.BoxGeometry( 100, 100, 100 ), material );
-  sceneCube.add( mesh );
-
-  //
+  var mesh = new THREE.Mesh( new THREE.BoxGeometry( 100, 100, 100 ), material );
+  scene.add( mesh );
 
   renderer = new THREE.WebGLRenderer();
   renderer.setSize( window.innerWidth, window.innerHeight );
   renderer.autoClear = false;
-  container.appendChild( renderer.domElement );
-
-  //
+  document.body.appendChild( renderer.domElement );
 
   window.addEventListener( 'resize', onWindowResize, false );
+
+  renderer.render( scene, camera );
 
 }
 
@@ -100,69 +65,48 @@ function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
 
-  cameraCube.aspect = window.innerWidth / window.innerHeight;
-  cameraCube.updateProjectionMatrix();
-
   renderer.setSize( window.innerWidth, window.innerHeight );
 
 }
 
-function createScene( geometry, m1, m2, m3 ) {
+function onDocumentMouseDown(event) {
 
-  var s = 15;
-
-  var mesh = new THREE.Mesh( geometry, m1 );
-  mesh.position.z = - 100;
-  mesh.scale.x = mesh.scale.y = mesh.scale.z = s;
-  scene.add( mesh );
-
-  var mesh = new THREE.Mesh( geometry, m2 );
-  mesh.position.x = - 900;
-  mesh.position.z = - 100;
-  mesh.scale.x = mesh.scale.y = mesh.scale.z = s;
-  scene.add( mesh );
-
-  var mesh = new THREE.Mesh( geometry, m3 );
-  mesh.position.x = 900;
-  mesh.position.z = - 100;
-  mesh.scale.x = mesh.scale.y = mesh.scale.z = s;
-  scene.add( mesh );
-
-  loader.statusDomElement.style.display = "none";
+  currentX = event.clientX;
+  currentY = event.clientY;
 
 }
 
 function onDocumentMouseMove(event) {
 
-  mouseX = ( event.clientX - windowHalfX ) * 4;
-  mouseY = ( event.clientY - windowHalfY ) * 4;
+  var r = 1
+
+  if (currentX != null && currentY != null) {
+
+    var deltaX = event.clientX - currentX;
+    var deltaY = event.clientY - currentY;
+
+    theta = (theta + deltaX) % 360
+    phi = (phi + deltaY) % 180
+
+    currentX = event.clientX;
+    currentY = event.clientY;
+
+    camera.position.x = r * Math.sin( theta * Math.PI / 360 )
+                            * Math.cos( phi * Math.PI / 360 );
+    camera.position.y = r * Math.sin( phi * Math.PI / 360 );
+    camera.position.z = r * Math.cos( theta * Math.PI / 360 )
+                        * Math.cos( phi * Math.PI / 360 );
+    camera.lookAt( scene.position );
+    camera.updateMatrix();
+
+    renderer.render( scene, camera );
+
+  }
 
 }
 
-//
+function onDocumentMouseUp(event) {
 
-function animate() {
-
-  requestAnimationFrame( animate );
-
-  render();
-
-}
-
-function render() {
-
-  var timer = -0.0002 * Date.now();
-
-  pointLight.position.x = 1500 * Math.cos( timer );
-  pointLight.position.z = 1500 * Math.sin( timer );
-
-  camera.position.x += ( mouseX - camera.position.x ) * .05;
-  camera.position.y += ( - mouseY - camera.position.y ) * .05;
-
-  camera.lookAt( scene.position );
-  cameraCube.rotation.copy( camera.rotation );
-
-  renderer.render( sceneCube, cameraCube );
-  renderer.render( scene, camera );
+  currentX = currentY = null;
 
 }
