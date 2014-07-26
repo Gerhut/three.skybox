@@ -77,7 +77,7 @@ function onDocumentMouseMove(event) {
     var deltaY = event.clientY - currentY;
 
     theta = (theta + deltaX)
-    phi = (phi + deltaY)
+    phi = Math.max(-179, Math.min(179, phi + deltaY))
 
     currentX = event.clientX;
     currentY = event.clientY;
