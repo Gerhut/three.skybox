@@ -6,9 +6,6 @@ var currentY = null;
 var theta = 0;
 var phi = 0;
 
-var windowHalfX = window.innerWidth / 2;
-var windowHalfY = window.innerHeight / 2;
-
 document.addEventListener('mousedown', onDocumentMouseDown, false);
 document.addEventListener('mousemove', onDocumentMouseMove, false);
 document.addEventListener('mouseup', onDocumentMouseUp, false);
@@ -22,9 +19,9 @@ function init() {
   scene = new THREE.Scene();
 
   var urls = [
-    'you.jpg', 'zuo.jpg',
+    'qian.jpg', 'zuo.jpg',
     'shang.jpg', 'xia.jpg',
-    'qian.jpg', 'hou.jpg'
+    'hou.jpg', 'you.jpg'
   ];
 
   var reflectionCube = THREE.ImageUtils.loadTextureCube( urls );
@@ -47,25 +44,21 @@ function init() {
   scene.add( mesh );
 
   renderer = new THREE.WebGLRenderer();
-  renderer.setSize( window.innerWidth, window.innerHeight );
   renderer.autoClear = false;
   document.body.appendChild( renderer.domElement );
 
   window.addEventListener( 'resize', onWindowResize, false );
 
-  renderer.render( scene, camera );
+  render();
 
 }
 
 function onWindowResize() {
 
-  windowHalfX = window.innerWidth / 2;
-  windowHalfY = window.innerHeight / 2;
-
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-
-  renderer.setSize( window.innerWidth, window.innerHeight );
+  
+  render();
 
 }
 
@@ -78,28 +71,18 @@ function onDocumentMouseDown(event) {
 
 function onDocumentMouseMove(event) {
 
-  var r = 1
-
   if (currentX != null && currentY != null) {
 
     var deltaX = event.clientX - currentX;
     var deltaY = event.clientY - currentY;
 
-    theta = (theta + deltaX) % 360
-    phi = (phi + deltaY) % 180
+    theta = (theta + deltaX)
+    phi = (phi + deltaY)
 
     currentX = event.clientX;
     currentY = event.clientY;
 
-    camera.position.x = r * Math.sin( theta * Math.PI / 360 )
-                            * Math.cos( phi * Math.PI / 360 );
-    camera.position.y = r * Math.sin( phi * Math.PI / 360 );
-    camera.position.z = r * Math.cos( theta * Math.PI / 360 )
-                        * Math.cos( phi * Math.PI / 360 );
-    camera.lookAt( scene.position );
-    camera.updateMatrix();
-
-    renderer.render( scene, camera );
+    render();
 
   }
 
@@ -108,5 +91,17 @@ function onDocumentMouseMove(event) {
 function onDocumentMouseUp(event) {
 
   currentX = currentY = null;
+
+}
+
+function render() {
+
+  camera.position.x = Math.sin( theta * Math.PI / 360 ) * Math.cos( phi * Math.PI / 360 );
+  camera.position.y = Math.sin( phi * Math.PI / 360 );
+  camera.position.z = Math.cos( theta * Math.PI / 360 ) * Math.cos( phi * Math.PI / 360 );
+  camera.lookAt( scene.position );
+  camera.updateMatrix();
+
+  renderer.render( scene, camera );
 
 }
